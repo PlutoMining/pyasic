@@ -49,6 +49,8 @@ MiningModeType = (
     | MiningModePreset
     | MiningModeConfig
 )
+from pyasic.config.extra_config import MinerExtraConfig
+from pyasic.config.extra_config.espminer import ESPMinerExtraConfig
 from pyasic.config.mining.scaling import ScalingConfig
 from pyasic.config.pools import PoolConfig
 from pyasic.config.temperature import TemperatureConfig
@@ -66,6 +68,7 @@ class MinerConfig(BaseModel):
     fan_mode: FanModeType = Field(default_factory=FanModeConfig.default)
     temperature: TemperatureConfig = Field(default_factory=TemperatureConfig.default)
     mining_mode: MiningModeType = Field(default_factory=MiningModeConfig.default)
+    extra_config: MinerExtraConfig | None = Field(default=None)
 
     def __getitem__(self, item: str) -> Any:
         try:
@@ -202,12 +205,17 @@ class MinerConfig(BaseModel):
         }
 
     def as_espminer(self, user_suffix: str | None = None) -> dict:
-        return {
+        base_config = {
             **self.fan_mode.as_espminer(),
             **self.temperature.as_espminer(),
             **self.mining_mode.as_espminer(),
             **self.pools.as_espminer(user_suffix=user_suffix),
         }
+        # Delegate to extra_config if present
+        if self.extra_config is not None:
+            extra_dict = self.extra_config.as_espminer()
+            base_config.update(extra_dict)
+        return base_config
 
     def as_luxos(self, user_suffix: str | None = None) -> dict:
         return {
@@ -363,10 +371,16 @@ class MinerConfig(BaseModel):
 
     @classmethod
     def from_espminer(cls, web_system_info: dict) -> "MinerConfig":
-        return cls(
+        config = cls(
             pools=PoolConfig.from_espminer(web_system_info),
             fan_mode=FanModeConfig.from_espminer(web_system_info),
         )
+        # Create extra config if applicable
+        extra_config = ESPMinerExtraConfig.from_espminer(web_system_info)
+        # Only set if there are actual values
+        if any(v is not None for v in extra_config.model_dump().values()):
+            config.extra_config = extra_config
+        return config
 
     @classmethod
     def from_iceriver(cls, web_userpanel: dict) -> "MinerConfig":
