@@ -115,6 +115,9 @@ class MinerData(BaseModel):
     voltage: float | None = None
     raw_wattage_limit: int | None = Field(exclude=True, default=None, repr=False)
 
+    # network (BitAxe / ESPMiner-specific, read-only)
+    network_difficulty: int | None = None
+
     # difficulty (BitAxe / ESPMiner-specific, optional)
     best_difficulty: int | None = None
     best_session_difficulty: int | None = None
