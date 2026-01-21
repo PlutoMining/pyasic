@@ -170,13 +170,16 @@ class TestMinerConfigWithExtraConfig(unittest.TestCase):
     def test_miner_config_with_extra_config(self):
         """Test MinerConfig with ESPMinerExtraConfig"""
         from pyasic.config.pools import Pool
+
         extra_config = ESPMinerExtraConfig(
             rotation=90,
             invertscreen=1,
             display_timeout=5,
         )
         config = MinerConfig(
-            pools=PoolConfig.simple([Pool(url="stratum.test.io", user="test.user", password="x")]),
+            pools=PoolConfig.simple(
+                [Pool(url="stratum.test.io", user="test.user", password="x")]
+            ),
             extra_config=extra_config,
         )
         self.assertIsNotNone(config.extra_config)
@@ -187,13 +190,16 @@ class TestMinerConfigWithExtraConfig(unittest.TestCase):
     def test_as_espminer_includes_extra_config(self):
         """Test that as_espminer() includes extra_config fields"""
         from pyasic.config.pools import Pool
+
         extra_config = ESPMinerExtraConfig(
             rotation=180,
             invertscreen=0,
             display_timeout=10,
         )
         config = MinerConfig(
-            pools=PoolConfig.simple([Pool(url="stratum.test.io", user="test.user", password="x")]),
+            pools=PoolConfig.simple(
+                [Pool(url="stratum.test.io", user="test.user", password="x")]
+            ),
             extra_config=extra_config,
         )
         result = config.as_espminer()
@@ -208,8 +214,11 @@ class TestMinerConfigWithExtraConfig(unittest.TestCase):
     def test_as_espminer_without_extra_config(self):
         """Test that as_espminer() works without extra_config"""
         from pyasic.config.pools import Pool
+
         config = MinerConfig(
-            pools=PoolConfig.simple([Pool(url="stratum.test.io", user="test.user", password="x")]),
+            pools=PoolConfig.simple(
+                [Pool(url="stratum.test.io", user="test.user", password="x")]
+            ),
             extra_config=None,
         )
         result = config.as_espminer()

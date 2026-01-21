@@ -22,23 +22,23 @@ from pyasic.config.extra_config.base import MinerExtraConfig
 
 class ESPMinerExtraConfig(MinerExtraConfig):
     """ESPMiner/BitAxe-specific extra configuration fields"""
-    
+
     # Display settings
     rotation: int | None = None  # Display rotation (0, 90, 180, 270)
     invertscreen: int | None = None  # Invert screen (0 or 1)
     display_timeout: int | None = None  # Display timeout in seconds
-    
+
     # Performance/Overclock settings
     overheat_mode: int | None = None  # Overheat mode (0 or 1)
     overclock_enabled: int | None = None  # Overclock enabled (0 or 1)
     stats_frequency: int | None = None  # Stats update frequency
-    
+
     # Fan settings (additional to fan_mode)
     min_fan_speed: int | None = None  # Minimum fan speed percentage
-    
+
     def as_espminer(self, *args: Any, **kwargs: Any) -> dict:
         """Convert to ESPMiner API format.
-        
+
         Returns:
             A dictionary with ESPMiner-specific config fields, excluding None values.
             Field names are converted to match API format (snake_case to camelCase where needed).
@@ -54,21 +54,21 @@ class ESPMinerExtraConfig(MinerExtraConfig):
             "stats_frequency": "statsFrequency",
             "min_fan_speed": "minFanSpeed",
         }
-        
+
         for field_name, api_name in field_mapping.items():
             value = getattr(self, field_name, None)
             if value is not None:
                 result[api_name] = value
-        
+
         return result
-    
+
     @classmethod
-    def from_espminer(cls, web_system_info: dict) -> "ESPMinerExtraConfig":
+    def from_espminer(cls, web_system_info: dict) -> ESPMinerExtraConfig:
         """Create ESPMinerExtraConfig from ESPMiner API response.
-        
+
         Args:
             web_system_info: The system/info response from ESPMiner API.
-            
+
         Returns:
             An ESPMinerExtraConfig instance with fields extracted from the API response.
         """

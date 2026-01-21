@@ -20,9 +20,10 @@ from pyasic.config.base import MinerConfigValue
 
 class MinerExtraConfig(MinerConfigValue):
     """Base class for miner-specific extra configuration fields.
-    
+
     Each miner type that needs additional config fields should create
     a subclass of this base class and implement the appropriate
     as_<miner>() and from_<miner>() methods.
     """
+
     pass

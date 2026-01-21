@@ -64,6 +64,7 @@ class TestBitAxeLocal(unittest.IsolatedAsyncioTestCase):
         # Check if extra_config is present (may be None if miner doesn't have these fields)
         if cfg.extra_config is not None:
             from pyasic.config.extra_config.espminer import ESPMinerExtraConfig
+
             self.assertIsInstance(cfg.extra_config, ESPMinerExtraConfig)
 
             # If extra_config exists, check that fields are accessible
@@ -91,7 +92,9 @@ class TestBitAxeLocal(unittest.IsolatedAsyncioTestCase):
 
         # Check what config will be sent
         config_dict = current_cfg.as_espminer()
-        print(f"\nConfig to send (before adding extra_config): {list(config_dict.keys())}")
+        print(
+            f"\nConfig to send (before adding extra_config): {list(config_dict.keys())}"
+        )
 
         # Create or update extra_config
         if current_cfg.extra_config is None:
@@ -100,12 +103,16 @@ class TestBitAxeLocal(unittest.IsolatedAsyncioTestCase):
         # Set extra_config fields (toggle invertscreen as test)
         original_invertscreen = current_cfg.extra_config.invertscreen
         current_cfg.extra_config.invertscreen = (
-            0 if original_invertscreen == 1 else 1
-        ) if original_invertscreen is not None else 1
+            (0 if original_invertscreen == 1 else 1)
+            if original_invertscreen is not None
+            else 1
+        )
 
         # Check what will be sent after adding extra_config
         config_dict_with_extra = current_cfg.as_espminer()
-        print(f"Config to send (after adding extra_config): {list(config_dict_with_extra.keys())}")
+        print(
+            f"Config to send (after adding extra_config): {list(config_dict_with_extra.keys())}"
+        )
         print(f"Extra config fields: {current_cfg.extra_config.as_espminer()}")
 
         # Send config - if it fails, the miner may not support these fields
@@ -116,7 +123,10 @@ class TestBitAxeLocal(unittest.IsolatedAsyncioTestCase):
             # If sending fails, it might be because the miner doesn't support these fields
             # This is OK - just skip the verification part
             error_msg = str(e)
-            if "empty response" in error_msg.lower() or "json decode" in error_msg.lower():
+            if (
+                "empty response" in error_msg.lower()
+                or "json decode" in error_msg.lower()
+            ):
                 self.skipTest(
                     f"Miner may not support extra_config fields (API returned empty response): {e}"
                 )
@@ -131,13 +141,15 @@ class TestBitAxeLocal(unittest.IsolatedAsyncioTestCase):
             if verify_cfg.extra_config is not None:
                 # Check that the value we set is reflected (if miner supports it)
                 self.assertIsNotNone(verify_cfg.extra_config)
-                print(f"Verified extra_config exists: {verify_cfg.extra_config.as_espminer()}")
+                print(
+                    f"Verified extra_config exists: {verify_cfg.extra_config.as_espminer()}"
+                )
                 # Verify the invertscreen value was set correctly
                 if verify_cfg.extra_config.invertscreen is not None:
                     self.assertEqual(
                         verify_cfg.extra_config.invertscreen,
                         current_cfg.extra_config.invertscreen,
-                        "invertscreen value should match what we set"
+                        "invertscreen value should match what we set",
                     )
         except Exception as e:
             # If verification fails, that's OK - miner may not support reading these fields
@@ -150,14 +162,14 @@ class TestBitAxeLocal(unittest.IsolatedAsyncioTestCase):
         because it's a read-only metric, not a writable configuration field.
         """
         # Get data including network_difficulty
-        data = await self.miner.get_data(
-            include=[DataOptions.NETWORK_DIFFICULTY]
-        )
+        data = await self.miner.get_data(include=[DataOptions.NETWORK_DIFFICULTY])
 
         # network_difficulty should be in MinerData
         self.assertIsNotNone(data.network_difficulty)
         self.assertIsInstance(data.network_difficulty, int)
-        self.assertGreater(data.network_difficulty, 0, "Network difficulty should be positive")
+        self.assertGreater(
+            data.network_difficulty, 0, "Network difficulty should be positive"
+        )
 
         # Verify it's NOT in extra_config (it's read-only, not writable)
         config = await self.miner.get_config()
@@ -253,17 +265,26 @@ class TestBitAxeLocal(unittest.IsolatedAsyncioTestCase):
                 f"Parsing bug: Raw API has bestDiff={raw_system_info.get('bestDiff')} "
                 f"but parsed best_difficulty is None"
             )
-        if raw_system_info.get("bestSessionDiff") is not None and data.best_session_difficulty is None:
+        if (
+            raw_system_info.get("bestSessionDiff") is not None
+            and data.best_session_difficulty is None
+        ):
             self.fail(
                 f"Parsing bug: Raw API has bestSessionDiff={raw_system_info.get('bestSessionDiff')} "
                 f"but parsed best_session_difficulty is None"
             )
-        if raw_system_info.get("sharesAccepted") is not None and data.shares_accepted is None:
+        if (
+            raw_system_info.get("sharesAccepted") is not None
+            and data.shares_accepted is None
+        ):
             self.fail(
                 f"Parsing bug: Raw API has sharesAccepted={raw_system_info.get('sharesAccepted')} "
                 f"but parsed shares_accepted is None"
             )
-        if raw_system_info.get("sharesRejected") is not None and data.shares_rejected is None:
+        if (
+            raw_system_info.get("sharesRejected") is not None
+            and data.shares_rejected is None
+        ):
             self.fail(
                 f"Parsing bug: Raw API has sharesRejected={raw_system_info.get('sharesRejected')} "
                 f"but parsed shares_rejected is None"
@@ -440,7 +461,9 @@ class TestBitAxeLocal(unittest.IsolatedAsyncioTestCase):
                 "field": "uptime",
                 "raw_api": raw_uptime,
                 "parsed": parsed_uptime,
-                "match": raw_uptime == parsed_uptime if raw_uptime is not None else None,
+                "match": raw_uptime == parsed_uptime
+                if raw_uptime is not None
+                else None,
             }
         )
 
@@ -467,7 +490,9 @@ class TestBitAxeLocal(unittest.IsolatedAsyncioTestCase):
                 "field": "version (api_ver)",
                 "raw_api": raw_version,
                 "parsed": parsed_api_ver,
-                "match": raw_version == parsed_api_ver if raw_version is not None else None,
+                "match": raw_version == parsed_api_ver
+                if raw_version is not None
+                else None,
             }
         )
         comparisons.append(
@@ -475,7 +500,9 @@ class TestBitAxeLocal(unittest.IsolatedAsyncioTestCase):
                 "field": "version (fw_ver)",
                 "raw_api": raw_version,
                 "parsed": parsed_fw_ver,
-                "match": raw_version == parsed_fw_ver if raw_version is not None else None,
+                "match": raw_version == parsed_fw_ver
+                if raw_version is not None
+                else None,
             }
         )
 
@@ -552,7 +579,11 @@ class TestBitAxeLocal(unittest.IsolatedAsyncioTestCase):
         print("-" * 80)
         for comp in comparisons:
             match_str = (
-                "✓" if comp["match"] is True else "✗" if comp["match"] is False else "N/A"
+                "✓"
+                if comp["match"] is True
+                else "✗"
+                if comp["match"] is False
+                else "N/A"
             )
             print(
                 f"{comp['field']:<30} "
