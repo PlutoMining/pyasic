@@ -19,13 +19,14 @@ from collections.abc import Callable
 from datetime import datetime, timezone
 from typing import Any, Optional
 
-from pydantic import BaseModel, Field, computed_field
+from pydantic import BaseModel, Field, computed_field, field_serializer
 
 from pyasic.config import MinerConfig
 from pyasic.config.mining import MiningModePowerTune
 from pyasic.data.pools import PoolMetrics, Scheme
 from pyasic.device.algorithm.hashrate import AlgoHashRateType
 from pyasic.device.algorithm.hashrate.base import GenericHashrate
+from pyasic.device.algorithm.hashrate.unit.base import GenericUnit
 
 from .boards import HashBoard
 from .device import DeviceInfo
@@ -135,6 +136,15 @@ class MinerData(BaseModel):
 
     # config
     config: MinerConfig | None = None
+
+    @field_serializer("config")
+    def serialize_config(self, config: MinerConfig | None, _info) -> dict | None:
+        """Serialize config field, ensuring extra_config is properly included."""
+        if config is None:
+            return None
+        # Use MinerConfig's model_dump() which properly handles extra_config
+        return config.model_dump()
+
     fault_light: bool | None = None
 
     # errors
@@ -221,8 +231,6 @@ class MinerData(BaseModel):
                     hr_data.append(item.hashrate)
             if len(hr_data) > 0:
                 if self.device_info is not None and self.device_info.algo is not None:
-                    from pyasic.device.algorithm.hashrate.unit.base import GenericUnit
-
                     return sum(
                         hr_data,
                         start=self.device_info.algo.hashrate(
