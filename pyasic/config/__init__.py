@@ -78,7 +78,21 @@ class MinerConfig(BaseModel):
 
     def as_dict(self) -> dict:
         """Converts the MinerConfig object to a dictionary."""
-        return self.model_dump()
+        result = self.model_dump()
+        # Explicitly handle extra_config serialization to ensure it's included
+        # Pydantic's model_dump() sometimes returns {} for nested BaseModel instances
+        # so we manually serialize extra_config if it exists
+        if self.extra_config is not None:
+            result["extra_config"] = self.extra_config.model_dump()
+        return result
+
+    def model_dump(self, **kwargs) -> dict:
+        """Override model_dump to ensure extra_config is properly serialized."""
+        result = super().model_dump(**kwargs)
+        # Explicitly handle extra_config serialization to ensure it's included
+        if self.extra_config is not None:
+            result["extra_config"] = self.extra_config.model_dump(**kwargs)
+        return result
 
     def as_am_modern(self, user_suffix: str | None = None) -> dict:
         """Generates the configuration in the format suitable for modern Antminers."""
@@ -371,15 +385,18 @@ class MinerConfig(BaseModel):
 
     @classmethod
     def from_espminer(cls, web_system_info: dict) -> "MinerConfig":
-        config = cls(
-            pools=PoolConfig.from_espminer(web_system_info),
-            fan_mode=FanModeConfig.from_espminer(web_system_info),
-        )
         # Create extra config if applicable
         extra_config = ESPMinerExtraConfig.from_espminer(web_system_info)
         # Only set if there are actual values
+        extra_config_value = None
         if any(v is not None for v in extra_config.model_dump().values()):
-            config.extra_config = extra_config
+            extra_config_value = extra_config
+
+        config = cls(
+            pools=PoolConfig.from_espminer(web_system_info),
+            fan_mode=FanModeConfig.from_espminer(web_system_info),
+            extra_config=extra_config_value,
+        )
         return config
 
     @classmethod

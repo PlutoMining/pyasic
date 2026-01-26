@@ -94,7 +94,7 @@ class MinerConfigValue(BaseModel):
         return cls()
 
     def as_dict(self) -> dict:
-        return self.model_dump()
+        return self.model_dump(exclude_unset=False)
 
     def as_am_modern(self, *args: Any, **kwargs: Any) -> Any:
         return {}
