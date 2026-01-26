@@ -80,7 +80,7 @@ class MinerData(BaseModel):
 
     # general
     ip: str
-    raw_datetime: datetime = Field(
+    raw_datetime: Any = Field(
         exclude=True, default_factory=datetime.now(timezone.utc).astimezone, repr=False
     )
 
@@ -226,7 +226,7 @@ class MinerData(BaseModel):
                     return sum(
                         hr_data,
                         start=self.device_info.algo.hashrate(
-                            rate=0, unit=GenericUnit.H
+                            rate=0, unit=self.device_info.algo.unit.default
                         ),
                     )
                 else:
