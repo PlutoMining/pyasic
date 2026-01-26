@@ -51,6 +51,9 @@ class ESPMinerWebAPI(BaseWebAPI):
                 else:
                     if data.status_code == 200:
                         try:
+                            # Handle empty responses (some APIs return 200 OK with no body)
+                            if not data.text or data.text.strip() == "":
+                                return {}
                             return data.json()
                         except json.decoder.JSONDecodeError as e:
                             response_text = data.text if data.text else "empty response"

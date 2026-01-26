@@ -64,6 +64,10 @@ ESPMINER_DATA_LOC = DataLocations(
             "_get_shares_rejected",
             [WebAPICommand("web_system_info", "system/info")],
         ),
+        str(DataOptions.NETWORK_DIFFICULTY): DataFunction(
+            "_get_network_difficulty",
+            [WebAPICommand("web_system_info", "system/info")],
+        ),
     }
 )
 
@@ -156,6 +160,21 @@ class ESPMiner(BaseMiner):
 
         if web_system_info is not None:
             value = web_system_info.get("sharesRejected")
+            return self._parse_difficulty_value(value)
+        return None
+
+    async def _get_network_difficulty(
+        self, web_system_info: dict | None = None
+    ) -> int | None:
+        """Get current network difficulty (read-only, BitAxe / ESPMiner-specific)."""
+        if web_system_info is None:
+            try:
+                web_system_info = await self.web.system_info()
+            except APIError:
+                pass
+
+        if web_system_info is not None:
+            value = web_system_info.get("networkDifficulty")
             return self._parse_difficulty_value(value)
         return None
 

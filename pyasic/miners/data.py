@@ -35,6 +35,7 @@ class DataOptions(Enum):
     FAN_PSU = "fan_psu"
     ERRORS = "errors"
     FAULT_LIGHT = "fault_light"
+    NETWORK_DIFFICULTY = "network_difficulty"
     IS_MINING = "is_mining"
     UPTIME = "uptime"
     CONFIG = "config"
