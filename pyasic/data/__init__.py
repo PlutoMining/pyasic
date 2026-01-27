@@ -17,7 +17,7 @@ import copy
 import time
 from collections.abc import Callable
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field, computed_field, field_serializer
 

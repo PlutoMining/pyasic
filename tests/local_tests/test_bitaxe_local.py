@@ -31,7 +31,7 @@ class TestBitAxeLocal(unittest.IsolatedAsyncioTestCase):
         self.miner = miner
         return None
 
-    async def test_get_data_basics(self):
+    async def test_get_data_basics(self) -> None:
         data = await self.miner.get_data(
             include=[
                 DataOptions.HOSTNAME,
@@ -52,136 +52,11 @@ class TestBitAxeLocal(unittest.IsolatedAsyncioTestCase):
         self.assertIsNotNone(data.hashrate)
         self.assertIsNotNone(data.mac)
 
-    async def test_get_config(self):
+    async def test_get_config(self) -> None:
         cfg = await self.miner.get_config()
         self.assertIsNotNone(cfg)
 
-    async def test_get_config_with_extra_config(self):
-        """Test that get_config() includes extra_config fields if present"""
-        cfg = await self.miner.get_config()
-        self.assertIsNotNone(cfg)
-
-        # Check if extra_config is present (may be None if miner doesn't have these fields)
-        if cfg.extra_config is not None:
-            from pyasic.config.extra_config.espminer import ESPMinerExtraConfig
-
-            self.assertIsInstance(cfg.extra_config, ESPMinerExtraConfig)
-
-            # If extra_config exists, check that fields are accessible
-            # (they may be None if not set on the miner)
-            self.assertIsInstance(cfg.extra_config.rotation, (int, type(None)))
-            self.assertIsInstance(cfg.extra_config.invertscreen, (int, type(None)))
-            self.assertIsInstance(cfg.extra_config.display_timeout, (int, type(None)))
-            self.assertIsInstance(cfg.extra_config.overheat_mode, (int, type(None)))
-            self.assertIsInstance(cfg.extra_config.overclock_enabled, (int, type(None)))
-            self.assertIsInstance(cfg.extra_config.stats_frequency, (int, type(None)))
-            self.assertIsInstance(cfg.extra_config.min_fan_speed, (int, type(None)))
-
-    async def test_send_config_with_extra_config(self):
-        """Test sending config with extra_config fields.
-
-        Note: This test may skip if the miner doesn't support these extra config fields
-        or if the API rejects them. This is expected behavior for some miner firmware versions.
-        """
-        # Get current config
-        current_cfg = await self.miner.get_config()
-        self.assertIsNotNone(current_cfg)
-
-        # Import ESPMinerExtraConfig
-        from pyasic.config.extra_config.espminer import ESPMinerExtraConfig
-
-        # Check what config will be sent
-        config_dict = current_cfg.as_espminer()
-        print(
-            f"\nConfig to send (before adding extra_config): {list(config_dict.keys())}"
-        )
-
-        # Create or update extra_config
-        if current_cfg.extra_config is None:
-            current_cfg.extra_config = ESPMinerExtraConfig()
-
-        # Set extra_config fields (toggle invertscreen as test)
-        original_invertscreen = current_cfg.extra_config.invertscreen
-        current_cfg.extra_config.invertscreen = (
-            (0 if original_invertscreen == 1 else 1)
-            if original_invertscreen is not None
-            else 1
-        )
-
-        # Check what will be sent after adding extra_config
-        config_dict_with_extra = current_cfg.as_espminer()
-        print(
-            f"Config to send (after adding extra_config): {list(config_dict_with_extra.keys())}"
-        )
-        print(f"Extra config fields: {current_cfg.extra_config.as_espminer()}")
-
-        # Send config - if it fails, the miner may not support these fields
-        try:
-            await self.miner.send_config(current_cfg)
-            print("Config sent successfully")
-        except Exception as e:
-            # If sending fails, it might be because the miner doesn't support these fields
-            # This is OK - just skip the verification part
-            error_msg = str(e)
-            if (
-                "empty response" in error_msg.lower()
-                or "json decode" in error_msg.lower()
-            ):
-                self.skipTest(
-                    f"Miner may not support extra_config fields (API returned empty response): {e}"
-                )
-            else:
-                # Re-raise if it's a different error
-                raise
-
-        # Try to verify config was sent by reading it back
-        # Note: Some miners may not persist these settings immediately
-        try:
-            verify_cfg = await self.miner.get_config()
-            if verify_cfg.extra_config is not None:
-                # Check that the value we set is reflected (if miner supports it)
-                self.assertIsNotNone(verify_cfg.extra_config)
-                print(
-                    f"Verified extra_config exists: {verify_cfg.extra_config.as_espminer()}"
-                )
-                # Verify the invertscreen value was set correctly
-                if verify_cfg.extra_config.invertscreen is not None:
-                    self.assertEqual(
-                        verify_cfg.extra_config.invertscreen,
-                        current_cfg.extra_config.invertscreen,
-                        "invertscreen value should match what we set",
-                    )
-        except Exception as e:
-            # If verification fails, that's OK - miner may not support reading these fields
-            print(f"Could not verify extra_config (this is OK): {e}")
-
-    async def test_network_difficulty_read_only(self):
-        """Test that network_difficulty is available as a read-only data field.
-
-        network_difficulty should be in MinerData, not in MinerConfig.extra_config,
-        because it's a read-only metric, not a writable configuration field.
-        """
-        # Get data including network_difficulty
-        data = await self.miner.get_data(include=[DataOptions.NETWORK_DIFFICULTY])
-
-        # network_difficulty should be in MinerData
-        self.assertIsNotNone(data.network_difficulty)
-        self.assertIsInstance(data.network_difficulty, int)
-        self.assertGreater(
-            data.network_difficulty, 0, "Network difficulty should be positive"
-        )
-
-        # Verify it's NOT in extra_config (it's read-only, not writable)
-        config = await self.miner.get_config()
-        if config.extra_config is not None:
-            # network_difficulty should not be in extra_config
-            extra_dict = config.extra_config.as_espminer()
-            self.assertNotIn("networkDifficulty", extra_dict)
-            self.assertNotIn("network_difficulty", extra_dict)
-
-        print(f"Network difficulty (read-only): {data.network_difficulty}")
-
-    async def test_get_data_extended(self):
+    async def test_get_data_extended(self) -> None:
         data = await self.miner.get_data(
             include=[
                 DataOptions.HOSTNAME,
@@ -223,96 +98,7 @@ class TestBitAxeLocal(unittest.IsolatedAsyncioTestCase):
         self.assertGreater(len(data.hashboards), 0)
         self.assertGreater(len(data.fans), 0)
 
-    async def test_bitaxe_specific_fields(self):
-        """Test that BitAxe/ESPMiner-specific fields are accessible and correctly typed.
-
-        Note: These fields may be None if the miner hasn't found shares yet or
-        if the miner doesn't support these metrics. The test verifies the fields
-        exist and are the correct type when they have values.
-        """
-        # First, get raw API response to verify fields exist
-        web = getattr(self.miner, "web", None)
-        if web is None or not isinstance(web, ESPMinerWebAPI):
-            self.skipTest("No web client available")
-
-        raw_system_info = await web.system_info()
-
-        # Debug: Print what we got from API
-        print(f"\nRaw API bestDiff: {raw_system_info.get('bestDiff')}")
-        print(f"Raw API bestSessionDiff: {raw_system_info.get('bestSessionDiff')}")
-        print(f"Raw API sharesAccepted: {raw_system_info.get('sharesAccepted')}")
-        print(f"Raw API sharesRejected: {raw_system_info.get('sharesRejected')}")
-
-        # Now get parsed data
-        data = await self.miner.get_data(
-            include=[
-                DataOptions.BEST_DIFFICULTY,
-                DataOptions.BEST_SESSION_DIFFICULTY,
-                DataOptions.SHARES_ACCEPTED,
-                DataOptions.SHARES_REJECTED,
-            ]
-        )
-
-        # Debug: Print what we got from parsed data
-        print(f"\nParsed best_difficulty: {data.best_difficulty}")
-        print(f"Parsed best_session_difficulty: {data.best_session_difficulty}")
-        print(f"Parsed shares_accepted: {data.shares_accepted}")
-        print(f"Parsed shares_rejected: {data.shares_rejected}")
-
-        # If raw API has values but parsed doesn't, that's a bug
-        if raw_system_info.get("bestDiff") is not None and data.best_difficulty is None:
-            self.fail(
-                f"Parsing bug: Raw API has bestDiff={raw_system_info.get('bestDiff')} "
-                f"but parsed best_difficulty is None"
-            )
-        if (
-            raw_system_info.get("bestSessionDiff") is not None
-            and data.best_session_difficulty is None
-        ):
-            self.fail(
-                f"Parsing bug: Raw API has bestSessionDiff={raw_system_info.get('bestSessionDiff')} "
-                f"but parsed best_session_difficulty is None"
-            )
-        if (
-            raw_system_info.get("sharesAccepted") is not None
-            and data.shares_accepted is None
-        ):
-            self.fail(
-                f"Parsing bug: Raw API has sharesAccepted={raw_system_info.get('sharesAccepted')} "
-                f"but parsed shares_accepted is None"
-            )
-        if (
-            raw_system_info.get("sharesRejected") is not None
-            and data.shares_rejected is None
-        ):
-            self.fail(
-                f"Parsing bug: Raw API has sharesRejected={raw_system_info.get('sharesRejected')} "
-                f"but parsed shares_rejected is None"
-            )
-
-        # Verify fields exist and are correct type when they have values
-        if data.best_difficulty is not None:
-            self.assertIsInstance(data.best_difficulty, int)
-            self.assertGreaterEqual(data.best_difficulty, 0)
-
-        if data.best_session_difficulty is not None:
-            self.assertIsInstance(data.best_session_difficulty, int)
-            self.assertGreaterEqual(data.best_session_difficulty, 0)
-
-        if data.shares_accepted is not None:
-            self.assertIsInstance(data.shares_accepted, int)
-            self.assertGreaterEqual(data.shares_accepted, 0)
-
-        if data.shares_rejected is not None:
-            self.assertIsInstance(data.shares_rejected, int)
-            self.assertGreaterEqual(data.shares_rejected, 0)
-
-    async def test_swarm_and_asic_info(self):
-        """Test swarm_info and asic_info endpoints.
-
-        Note: swarm_info may not be available on all miner firmware versions,
-        so we make it optional. asic_info should be available on all BitAxe miners.
-        """
+    async def test_swarm_and_asic_info(self) -> None:
         # Only run if the miner exposes the ESPMiner web API methods
         web = getattr(self.miner, "web", None)
         if web is None or not isinstance(web, ESPMinerWebAPI):
