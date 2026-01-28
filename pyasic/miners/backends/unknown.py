@@ -26,12 +26,18 @@ class UnknownMiner(BaseMiner):
     def __init__(
         self,
         ip: str,
-        *args,
-        **kwargs,  # noqa - ignore *args and **kwargs for signature consistency
+        version: str | None = None,
+        *,
+        rpc_port: int | None = None,
+        web_port: int | None = None,
+        ssh_port: int | None = None,
     ) -> None:
-        super().__init__(ip)
+        super().__init__(ip, version, rpc_port=rpc_port, web_port=web_port, ssh_port=ssh_port)
         self.ip = ip
-        self.rpc = UnknownRPCAPI(ip)
+        if rpc_port is not None:
+            self.rpc = UnknownRPCAPI(ip, port=rpc_port)
+        else:
+            self.rpc = UnknownRPCAPI(ip)
 
     def __repr__(self) -> str:
         return f"Unknown: {str(self.ip)}"
