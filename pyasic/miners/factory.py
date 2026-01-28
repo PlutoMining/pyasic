@@ -764,14 +764,21 @@ class MinerFactory:
                     yield result
 
     async def get_miner(
-        self, ip: str | ipaddress.IPv4Address | ipaddress.IPv6Address
+        self,
+        ip: str | ipaddress.IPv4Address | ipaddress.IPv6Address,
+        *,
+        rpc_port: int | None = None,
+        web_port: int | None = None,
+        ssh_port: int | None = None,
     ) -> AnyMiner | None:
         ip = str(ip)
 
         miner_type = None
 
         for _ in range(settings.get("factory_get_retries", 1)):
-            task = asyncio.create_task(self._get_miner_type(ip))
+            task = asyncio.create_task(
+                self._get_miner_type(ip, rpc_port=rpc_port, web_port=web_port)
+            )
             try:
                 miner_type = await asyncio.wait_for(
                     task, timeout=settings.get("factory_get_timeout", 3)
@@ -829,21 +836,32 @@ class MinerFactory:
                 except asyncio.TimeoutError:
                     pass
             miner = self._select_miner_from_classes(
-                ip, miner_type=miner_type, miner_model=miner_model, version=version
+                ip,
+                miner_type=miner_type,
+                miner_model=miner_model,
+                version=version,
+                rpc_port=rpc_port,
+                web_port=web_port,
+                ssh_port=ssh_port,
             )
             return miner
         return None
 
-    async def _get_miner_type(self, ip: str) -> MinerTypes | None:
+    async def _get_miner_type(
+        self, ip: str, *, rpc_port: int | None = None, web_port: int | None = None
+    ) -> MinerTypes | None:
         tasks = [
-            asyncio.create_task(self._get_miner_web(ip)),
-            asyncio.create_task(self._get_miner_socket(ip)),
+            asyncio.create_task(self._get_miner_web(ip, web_port=web_port)),
+            asyncio.create_task(self._get_miner_socket(ip, rpc_port=rpc_port)),
         ]
 
         return await concurrent_get_first_result(tasks, lambda x: x is not None)
 
-    async def _get_miner_web(self, ip: str) -> MinerTypes | None:
-        urls = [f"http://{ip}/", f"https://{ip}/"]
+    async def _get_miner_web(self, ip: str, *, web_port: int | None = None) -> MinerTypes | None:
+        if web_port is not None:
+            urls = [f"http://{ip}:{web_port}/", f"https://{ip}:{web_port}/"]
+        else:
+            urls = [f"http://{ip}/", f"https://{ip}/"]
         async with httpx.AsyncClient(
             transport=settings.transport(verify=False)
         ) as session:
@@ -859,7 +877,9 @@ class MinerFactory:
                 if mtype == MinerTypes.ANTMINER:
                     # could still be mara
                     auth = httpx.DigestAuth("root", "root")
-                    res = await self.send_web_command(ip, "/kaonsu/v1/brief", auth=auth)
+                    res = await self.send_web_command(
+                        ip, "/kaonsu/v1/brief", auth=auth, web_port=web_port
+                    )
                     if res is not None:
                         mtype = MinerTypes.MARATHON
                 if mtype == MinerTypes.HAMMER:
@@ -935,9 +955,12 @@ class MinerFactory:
             return MinerTypes.AURADINE
         return None
 
-    async def _get_miner_socket(self, ip: str) -> MinerTypes | None:
+    async def _get_miner_socket(self, ip: str, *, rpc_port: int | None = None) -> MinerTypes | None:
         commands = ["version", "devdetails"]
-        tasks = [asyncio.create_task(self._socket_ping(ip, cmd)) for cmd in commands]
+        tasks = [
+            asyncio.create_task(self._socket_ping(ip, cmd, rpc_port=rpc_port))
+            for cmd in commands
+        ]
 
         data = await concurrent_get_first_result(
             tasks,
@@ -949,11 +972,12 @@ class MinerFactory:
         return None
 
     @staticmethod
-    async def _socket_ping(ip: str, cmd: str) -> str | None:
+    async def _socket_ping(ip: str, cmd: str, *, rpc_port: int | None = None) -> str | None:
         data = b""
+        port = rpc_port if rpc_port is not None else 4028
         try:
             reader, writer = await asyncio.wait_for(
-                asyncio.open_connection(str(ip), 4028),
+                asyncio.open_connection(str(ip), port),
                 timeout=settings.get("factory_get_timeout", 3),
             )
         except (ConnectionError, OSError, asyncio.TimeoutError):
@@ -1037,11 +1061,17 @@ class MinerFactory:
         ip: str,
         location: str,
         auth: httpx.DigestAuth | None = None,
+        *,
+        web_port: int | None = None,
     ) -> dict | None:
         async with httpx.AsyncClient(transport=settings.transport()) as session:
             try:
+                if web_port is not None:
+                    url = f"http://{ip}:{web_port}{location}"
+                else:
+                    url = f"http://{ip}{location}"
                 data = await session.get(
-                    f"http://{ip}{location}",
+                    url,
                     auth=auth,
                     timeout=settings.get("factory_get_timeout", 3),
                 )
@@ -1060,10 +1090,13 @@ class MinerFactory:
         else:
             return json_data
 
-    async def send_api_command(self, ip: str, command: str) -> dict | None:
+    async def send_api_command(
+        self, ip: str, command: str, *, rpc_port: int | None = None
+    ) -> dict | None:
         data = b""
+        port = rpc_port if rpc_port is not None else 4028
         try:
-            reader, writer = await asyncio.open_connection(ip, 4028)
+            reader, writer = await asyncio.open_connection(ip, port)
         except (ConnectionError, OSError):
             return None
         cmd = {"command": command}
@@ -1178,6 +1211,10 @@ class MinerFactory:
         miner_model: str | None,
         miner_type: MinerTypes | None,
         version: str | None = None,
+        *,
+        rpc_port: int | None = None,
+        web_port: int | None = None,
+        ssh_port: int | None = None,
     ) -> AnyMiner | None:
         # special case since hiveon miners return web results copying the antminer stock FW
         if "HIVEON" in str(miner_model).upper():
@@ -1185,10 +1222,26 @@ class MinerFactory:
             miner_type = MinerTypes.HIVEON
 
         if miner_type is None:
-            return cast(AnyMiner, UnknownMiner(str(ip), version))
+            return cast(
+                AnyMiner,
+                UnknownMiner(
+                    str(ip),
+                    version,
+                    rpc_port=rpc_port,
+                    web_port=web_port,
+                    ssh_port=ssh_port,
+                ),
+            )
 
         try:
-            return MINER_CLASSES[miner_type][str(miner_model).upper()](ip, version)
+            miner_class = MINER_CLASSES[miner_type][str(miner_model).upper()]
+            return miner_class(
+                str(ip),
+                version,
+                rpc_port=rpc_port,
+                web_port=web_port,
+                ssh_port=ssh_port,
+            )
         except LookupError:
             if miner_type in MINER_CLASSES:
                 if miner_model is not None:
@@ -1196,8 +1249,24 @@ class MinerFactory:
                         f"Partially supported miner found: {miner_model}, type: {miner_type}, please open an issue with miner data "
                         f"and this model on GitHub (https://github.com/UpstreamData/pyasic/issues)."
                     )
-                return MINER_CLASSES[miner_type][None](ip, version)
-            return cast(AnyMiner, UnknownMiner(str(ip), version))
+                miner_class = MINER_CLASSES[miner_type][None]
+                return miner_class(
+                    str(ip),
+                    version,
+                    rpc_port=rpc_port,
+                    web_port=web_port,
+                    ssh_port=ssh_port,
+                )
+            return cast(
+                AnyMiner,
+                UnknownMiner(
+                    str(ip),
+                    version,
+                    rpc_port=rpc_port,
+                    web_port=web_port,
+                    ssh_port=ssh_port,
+                ),
+            )
 
     async def get_miner_model_antminer(self, ip: str) -> str | None:
         tasks = [
@@ -1592,5 +1661,11 @@ miner_factory = MinerFactory()
 # abstracted version of get miner that is easier to access
 async def get_miner(
     ip: str | ipaddress.IPv4Address | ipaddress.IPv6Address,
+    *,
+    rpc_port: int | None = None,
+    web_port: int | None = None,
+    ssh_port: int | None = None,
 ) -> AnyMiner | None:
-    return await miner_factory.get_miner(ip)  # type: ignore[func-returns-value]
+    return await miner_factory.get_miner(
+        ip, rpc_port=rpc_port, web_port=web_port, ssh_port=ssh_port
+    )  # type: ignore[func-returns-value]

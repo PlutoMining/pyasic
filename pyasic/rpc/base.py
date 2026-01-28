@@ -29,8 +29,14 @@ class BaseMinerRPCAPI:
     def __init__(self, ip: str, port: int = 4028, api_ver: str = "0.0.0") -> None:
         # api port, should be 4028
         self.port = port
-        # ip address of the miner
-        self.ip = ipaddress.ip_address(ip)
+        # ip / hostname of the miner
+        # Prefer parsing as an IP address, but gracefully fall back to
+        # storing the raw string so hostnames like "host.docker.internal"
+        # are supported.
+        try:
+            self.ip = ipaddress.ip_address(ip)
+        except ValueError:
+            self.ip = ip
         # api version if known
         self.api_ver = api_ver
 
