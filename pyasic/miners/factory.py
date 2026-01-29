@@ -819,8 +819,12 @@ class MinerFactory:
             version_fn = miner_version_fns.get(miner_type)
 
             if model_fn is not None:
-                # noinspection PyArgumentList
-                model_task = asyncio.create_task(model_fn(ip))
+                # Pass web_port to model detection functions that need it (like BitAxe)
+                # Most functions only accept ip, but BitAxe needs web_port for /api/system/info
+                if miner_type == MinerTypes.BITAXE and web_port is not None:
+                    model_task = asyncio.create_task(model_fn(ip, web_port=web_port))
+                else:
+                    model_task = asyncio.create_task(model_fn(ip))
                 try:
                     miner_model = await asyncio.wait_for(
                         model_task, timeout=settings.get("factory_get_timeout", 3)
@@ -1537,8 +1541,10 @@ class MinerFactory:
                 pass
         return None
 
-    async def get_miner_model_bitaxe(self, ip: str) -> str | None:
-        web_json_data = await self.send_web_command(ip, "/api/system/info")
+    async def get_miner_model_bitaxe(
+        self, ip: str, *, web_port: int | None = None
+    ) -> str | None:
+        web_json_data = await self.send_web_command(ip, "/api/system/info", web_port=web_port)
 
         if web_json_data is not None:
             try:
