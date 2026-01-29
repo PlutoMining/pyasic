@@ -822,9 +822,14 @@ class MinerFactory:
                 # Pass web_port to model detection functions that need it (like BitAxe)
                 # Most functions only accept ip, but BitAxe needs web_port for /api/system/info
                 if miner_type == MinerTypes.BITAXE and web_port is not None:
-                    model_task = asyncio.create_task(model_fn(ip, web_port=web_port))
+                    # Type ignore needed because mypy can't infer the function signature
+                    # from the dictionary lookup, but we know get_miner_model_bitaxe
+                    # accepts web_port parameter
+                    model_task = asyncio.create_task(
+                        model_fn(ip, web_port=web_port)  # type: ignore[operator]
+                    )
                 else:
-                    model_task = asyncio.create_task(model_fn(ip))
+                    model_task = asyncio.create_task(model_fn(ip))  # type: ignore[operator]
                 try:
                     miner_model = await asyncio.wait_for(
                         model_task, timeout=settings.get("factory_get_timeout", 3)

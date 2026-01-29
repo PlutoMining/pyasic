@@ -33,6 +33,7 @@ class BaseMinerRPCAPI:
         # Prefer parsing as an IP address, but gracefully fall back to
         # storing the raw string so hostnames like "host.docker.internal"
         # are supported.
+        self.ip: ipaddress.IPv4Address | ipaddress.IPv6Address | str
         try:
             self.ip = ipaddress.ip_address(ip)
         except ValueError:
