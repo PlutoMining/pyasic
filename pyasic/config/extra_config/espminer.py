@@ -32,6 +32,10 @@ class ESPMinerExtraConfig(MinerExtraConfig):
     overheat_mode: int | None = None  # Overheat mode (0 or 1)
     overclock_enabled: int | None = None  # Overclock enabled (0 or 1)
     stats_frequency: int | None = None  # Stats update frequency
+    frequency: int | None = None  # Chipset frequency in MHz (e.g. 490)
+
+    # System / runtime (read from device; freeHeap is typically read-only)
+    free_heap: int | None = None  # Free heap memory in bytes (API: freeHeap)
 
     # Fan settings (additional to fan_mode)
     min_fan_speed: int | None = None  # Minimum fan speed percentage
@@ -52,6 +56,8 @@ class ESPMinerExtraConfig(MinerExtraConfig):
             "overheat_mode": "overheat_mode",
             "overclock_enabled": "overclockEnabled",
             "stats_frequency": "statsFrequency",
+            "frequency": "frequency",
+            "free_heap": "freeHeap",
             "min_fan_speed": "minFanSpeed",
         }
 
@@ -79,5 +85,7 @@ class ESPMinerExtraConfig(MinerExtraConfig):
             overheat_mode=web_system_info.get("overheat_mode"),
             overclock_enabled=web_system_info.get("overclockEnabled"),
             stats_frequency=web_system_info.get("statsFrequency"),
+            frequency=web_system_info.get("frequency"),
+            free_heap=web_system_info.get("freeHeap"),
             min_fan_speed=web_system_info.get("minFanSpeed"),
         )
