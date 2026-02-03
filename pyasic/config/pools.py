@@ -130,11 +130,39 @@ class Pool(MinerConfigValue):
         }
 
     def as_espminer(self, user_suffix: str | None = None) -> dict:
-        return {
-            "stratumURL": self.url,
+        # ESPMiner expects separate host and port fields:
+        #   stratumURL  -> host only (no scheme, no port)
+        #   stratumPort -> integer port
+        #
+        # Internally we store a unified URL (often "stratum+tcp://host:port"),
+        # so here we parse and split it back into host/port for the API.
+        raw = self.url
+        host = raw
+        port: int | None = None
+
+        # Strip scheme if present (e.g. "stratum+tcp://", "stratum+ssl://")
+        if "://" in host:
+            _, host = host.split("://", 1)
+
+        # Extract port from "host:port" if present
+        if ":" in host:
+            host_part, port_part = host.rsplit(":", 1)
+            if port_part.isdigit():
+                host = host_part
+                try:
+                    port = int(port_part)
+                except ValueError:
+                    port = None
+
+        # Explicitly type result so mypy allows mixed value types (str + int).
+        result: dict[str, Any] = {
+            "stratumURL": host,
             "stratumUser": f"{self.user}{user_suffix or ''}",
             "stratumPassword": self.password,
         }
+        if port is not None:
+            result["stratumPort"] = port
+        return result
 
     def as_boser(self, user_suffix: str | None = None) -> PoolConfiguration:
         return PoolConfiguration(
