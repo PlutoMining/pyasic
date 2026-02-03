@@ -395,6 +395,7 @@ class MinerConfig(BaseModel):
         config = cls(
             pools=PoolConfig.from_espminer(web_system_info),
             fan_mode=FanModeConfig.from_espminer(web_system_info),
+            temperature=TemperatureConfig.from_espminer(web_system_info),
             extra_config=extra_config_value,
         )
         return config

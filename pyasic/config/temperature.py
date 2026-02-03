@@ -27,6 +27,12 @@ class TemperatureConfig(MinerConfigValue):
     def default(cls):
         return cls()
 
+    def as_espminer(self) -> dict:
+        result: dict = {}
+        if self.target is not None:
+            result["temptarget"] = self.target
+        return result
+
     def as_bosminer(self) -> dict:
         temp_cfg = {}
         if self.target is not None:
@@ -167,3 +173,8 @@ class TemperatureConfig(MinerConfigValue):
         except LookupError:
             pass
         return cls.default()
+
+    @classmethod
+    def from_espminer(cls, web_system_info: dict) -> TemperatureConfig:
+        """Create TemperatureConfig from ESPMiner / BitAxe system info."""
+        return cls(target=web_system_info.get("temptarget"))
