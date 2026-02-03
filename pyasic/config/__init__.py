@@ -258,11 +258,24 @@ class MinerConfig(BaseModel):
     @classmethod
     def from_dict(cls, dict_conf: dict) -> "MinerConfig":
         """Constructs a MinerConfig object from a dictionary."""
+        # Handle extra_config if present (miner-specific, e.g. ESPMinerExtraConfig)
+        extra_config_value = None
+        extra_config_dict = dict_conf.get("extra_config")
+        if extra_config_dict is not None:
+            # Try to detect miner type from context or use ESPMinerExtraConfig as default
+            # For now, we'll use ESPMinerExtraConfig - this could be made more generic
+            # if other miner types need extra_config support
+            extra_config_value = ESPMinerExtraConfig.from_dict(extra_config_dict)
+            # Only set if there are actual values (not all None)
+            if not any(v is not None for v in extra_config_value.model_dump().values()):
+                extra_config_value = None
+
         return cls(
             pools=PoolConfig.from_dict(dict_conf.get("pools")),
             mining_mode=MiningModeConfig.from_dict(dict_conf.get("mining_mode")),
             fan_mode=FanModeConfig.from_dict(dict_conf.get("fan_mode")),
             temperature=TemperatureConfig.from_dict(dict_conf.get("temperature")),
+            extra_config=extra_config_value,
         )
 
     @classmethod

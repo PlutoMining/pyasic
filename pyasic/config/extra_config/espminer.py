@@ -71,6 +71,21 @@ class ESPMinerExtraConfig(MinerExtraConfig):
         return result
 
     @classmethod
+    def from_dict(cls, dict_conf: dict | None) -> ESPMinerExtraConfig:
+        """Create ESPMinerExtraConfig from a dictionary.
+
+        Args:
+            dict_conf: Dictionary with extra_config fields (can be None).
+
+        Returns:
+            An ESPMinerExtraConfig instance with fields from the dictionary.
+        """
+        if dict_conf is None:
+            return cls()
+        # Pydantic will handle the field mapping automatically
+        return cls(**dict_conf)
+
+    @classmethod
     def from_espminer(cls, web_system_info: dict) -> ESPMinerExtraConfig:
         """Create ESPMinerExtraConfig from ESPMiner API response.
 
