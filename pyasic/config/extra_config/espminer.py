@@ -33,6 +33,7 @@ class ESPMinerExtraConfig(MinerExtraConfig):
     overclock_enabled: int | None = None  # Overclock enabled (0 or 1)
     stats_frequency: int | None = None  # Stats update frequency
     frequency: int | None = None  # Chipset frequency in MHz (e.g. 490)
+    core_voltage: int | None = None  # Core voltage in mV (e.g. 1100)
 
     # System / runtime (read from device; freeHeap is typically read-only)
     free_heap: int | None = None  # Free heap memory in bytes (API: freeHeap)
@@ -57,6 +58,7 @@ class ESPMinerExtraConfig(MinerExtraConfig):
             "overclock_enabled": "overclockEnabled",
             "stats_frequency": "statsFrequency",
             "frequency": "frequency",
+            "core_voltage": "coreVoltage",
             "free_heap": "freeHeap",
             "min_fan_speed": "minFanSpeed",
         }
@@ -86,6 +88,7 @@ class ESPMinerExtraConfig(MinerExtraConfig):
             overclock_enabled=web_system_info.get("overclockEnabled"),
             stats_frequency=web_system_info.get("statsFrequency"),
             frequency=web_system_info.get("frequency"),
+            core_voltage=web_system_info.get("coreVoltage"),
             free_heap=web_system_info.get("freeHeap"),
             min_fan_speed=web_system_info.get("minFanSpeed"),
         )
