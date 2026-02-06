@@ -15,7 +15,6 @@
 # ------------------------------------------------------------------------------
 import asyncio
 import logging
-from typing import Optional
 
 import aiofiles
 import semver
@@ -24,7 +23,6 @@ from pyasic.config import MinerConfig, MiningModeConfig
 from pyasic.data import Fan, HashBoard
 from pyasic.data.error_codes import MinerErrorData, WhatsminerError
 from pyasic.data.pools import PoolMetrics, PoolUrl
-from pyasic.device import MinerAlgo
 from pyasic.device.algorithm import AlgoHashRateType
 from pyasic.errors import APIError
 from pyasic.miners.data import DataFunction, DataLocations, DataOptions, RPCAPICommand

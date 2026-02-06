@@ -248,13 +248,12 @@ class BTMinerRPCAPI(BaseMinerRPCAPI):
         # standard multicommand format is "command1+command2"
         # commands starting with "get_" and the "status" command aren't supported, but we can fake that
 
-        split_commands = []
+        split_commands = list(
+            filter(lambda x: x.startswith("get_") or x == "status", commands_list)
+        )
 
-        for command in commands_list:
-            if command.startswith("get_") or command == "status":
-                commands_list.remove(command)
-                # send seperately and append later
-                split_commands.append(command)
+        for cmd in split_commands:
+            commands_list.remove(cmd)
 
         command = "+".join(commands_list)
 
