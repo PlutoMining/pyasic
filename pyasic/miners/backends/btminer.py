@@ -930,7 +930,7 @@ class BTMinerV3(StockFirmware):
                 rpc_pools=pools,
                 rpc_settings=settings,
                 rpc_device_info=device_info,
-                rpc_miner_status_summary=miner_summary,
+                rpc_miner_status_summary=miner_summary or {},
             )
         else:
             self.config = MinerConfig()

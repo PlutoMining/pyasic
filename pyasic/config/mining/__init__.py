@@ -268,18 +268,16 @@ class MiningModePowerTune(MinerConfigValue):
         return cfg
 
     def as_boser(self) -> dict:
+        power_target_kwargs: dict[str, Power] = {}
+        if self.power is not None:
+            power_target_kwargs["power_target"] = Power(watt=self.power)
+
         cfg: dict[str, Any] = {
             "set_performance_mode": SetPerformanceModeRequest(
                 save_action=SaveAction(SaveAction.SAVE_AND_APPLY),
                 mode=PerformanceMode(
                     tuner_mode=TunerPerformanceMode(
-                        power_target=PowerTargetMode(
-                            power_target=(
-                                Power(watt=self.power)
-                                if self.power is not None
-                                else None
-                            )  # type: ignore[arg-type]
-                        )
+                        power_target=PowerTargetMode(**power_target_kwargs)
                     )
                 ),
             ),
@@ -288,18 +286,22 @@ class MiningModePowerTune(MinerConfigValue):
             sd_cfg = {}
             if self.scaling.shutdown is not None:
                 sd_cfg = self.scaling.shutdown.as_boser()
-            power_target_kwargs: dict[str, Any] = {}
+            scaling_power_target_kwargs: dict[str, Any] = {}
             if self.scaling.step is not None:
-                power_target_kwargs["power_step"] = Power(watt=self.scaling.step)
+                scaling_power_target_kwargs["power_step"] = Power(
+                    watt=self.scaling.step
+                )
             if self.scaling.minimum is not None:
-                power_target_kwargs["min_power_target"] = Power(
+                scaling_power_target_kwargs["min_power_target"] = Power(
                     watt=self.scaling.minimum
                 )
             cfg["set_dps"] = SetDpsRequest(
                 save_action=SaveAction(SaveAction.SAVE_AND_APPLY),
                 enable=True,
                 **sd_cfg,
-                target=DpsTarget(power_target=DpsPowerTarget(**power_target_kwargs)),
+                target=DpsTarget(
+                    power_target=DpsPowerTarget(**scaling_power_target_kwargs)
+                ),
             )
 
         return cfg
@@ -367,20 +369,18 @@ class MiningModeHashrateTune(MinerConfigValue):
         return {"autotuning": conf}
 
     def as_boser(self) -> dict:
+        hashrate_target_kwargs: dict[str, TeraHashrate] = {}
+        if self.hashrate is not None:
+            hashrate_target_kwargs["hashrate_target"] = TeraHashrate(
+                terahash_per_second=float(self.hashrate)
+            )
+
         cfg: dict[str, Any] = {
             "set_performance_mode": SetPerformanceModeRequest(
                 save_action=SaveAction(SaveAction.SAVE_AND_APPLY),
                 mode=PerformanceMode(
                     tuner_mode=TunerPerformanceMode(
-                        hashrate_target=HashrateTargetMode(
-                            hashrate_target=TeraHashrate(
-                                terahash_per_second=(
-                                    float(self.hashrate)
-                                    if self.hashrate is not None
-                                    else None
-                                )  # type: ignore[arg-type]
-                            )
-                        )
+                        hashrate_target=HashrateTargetMode(**hashrate_target_kwargs)
                     )
                 ),
             )
@@ -389,13 +389,13 @@ class MiningModeHashrateTune(MinerConfigValue):
             sd_cfg = {}
             if self.scaling.shutdown is not None:
                 sd_cfg = self.scaling.shutdown.as_boser()
-            hashrate_target_kwargs: dict[str, Any] = {}
+            scaling_hashrate_target_kwargs: dict[str, Any] = {}
             if self.scaling.step is not None:
-                hashrate_target_kwargs["hashrate_step"] = TeraHashrate(
+                scaling_hashrate_target_kwargs["hashrate_step"] = TeraHashrate(
                     terahash_per_second=float(self.scaling.step)
                 )
             if self.scaling.minimum is not None:
-                hashrate_target_kwargs["min_hashrate_target"] = TeraHashrate(
+                scaling_hashrate_target_kwargs["min_hashrate_target"] = TeraHashrate(
                     terahash_per_second=float(self.scaling.minimum)
                 )
             cfg["set_dps"] = SetDpsRequest(
@@ -403,7 +403,7 @@ class MiningModeHashrateTune(MinerConfigValue):
                 enable=True,
                 **sd_cfg,
                 target=DpsTarget(
-                    hashrate_target=DpsHashrateTarget(**hashrate_target_kwargs)
+                    hashrate_target=DpsHashrateTarget(**scaling_hashrate_target_kwargs)
                 ),
             )
 

@@ -349,15 +349,18 @@ class TestBitAxeLocal(unittest.IsolatedAsyncioTestCase):
         # Test asic_info fields
         self.assertIsInstance(asic_info, dict)
         if "asicCount" in asic_info:
-            self.assertIsInstance(asic_info.get("asicCount"), int)
-            self.assertGreater(asic_info.get("asicCount"), 0)
+            asic_count = asic_info["asicCount"]
+            self.assertIsInstance(asic_count, int)
+            self.assertGreater(asic_count, 0)
         if "ASICModel" in asic_info:
             self.assertIsInstance(asic_info.get("ASICModel"), str)
         if "defaultFrequency" in asic_info:
             self.assertIsInstance(asic_info.get("defaultFrequency"), (int, float))
         if "frequencyOptions" in asic_info:
-            self.assertIsInstance(asic_info.get("frequencyOptions"), list)
-            self.assertGreater(len(asic_info.get("frequencyOptions")), 0)
+            frequency_options = asic_info["frequencyOptions"]
+            self.assertIsInstance(frequency_options, list)
+            self.assertGreater(len(frequency_options), 0)
+
 
         # Test swarm_info if available (optional)
         if swarm_info:
