@@ -76,22 +76,28 @@ class MinerConfig(BaseModel):
         except AttributeError:
             raise KeyError
 
+    def _serialize_extra_config(self, **kwargs: Any) -> dict | None:
+        """Serialize extra_config for API output. Always returns dict or None."""
+        if self.extra_config is None:
+            return None
+        # Ensure we have a MinerExtraConfig subclass instance (e.g. ESPMinerExtraConfig)
+        if isinstance(self.extra_config, MinerExtraConfig):
+            return self.extra_config.model_dump(**kwargs)
+        # If it's a dict (e.g. from JSON round-trip), return as-is
+        if isinstance(self.extra_config, dict):
+            return self.extra_config
+        return None
+
     def as_dict(self) -> dict:
         """Converts the MinerConfig object to a dictionary."""
         result = self.model_dump()
-        # Explicitly handle extra_config serialization to ensure it's included
-        # Pydantic's model_dump() sometimes returns {} for nested BaseModel instances
-        # so we manually serialize extra_config if it exists
-        if self.extra_config is not None:
-            result["extra_config"] = self.extra_config.model_dump()
+        result["extra_config"] = self._serialize_extra_config()
         return result
 
     def model_dump(self, **kwargs) -> dict:
-        """Override model_dump to ensure extra_config is properly serialized."""
+        """Override model_dump to ensure extra_config is always included."""
         result = super().model_dump(**kwargs)
-        # Explicitly handle extra_config serialization to ensure it's included
-        if self.extra_config is not None:
-            result["extra_config"] = self.extra_config.model_dump(**kwargs)
+        result["extra_config"] = self._serialize_extra_config(**kwargs)
         return result
 
     def as_am_modern(self, user_suffix: str | None = None) -> dict:
@@ -258,11 +264,24 @@ class MinerConfig(BaseModel):
     @classmethod
     def from_dict(cls, dict_conf: dict) -> "MinerConfig":
         """Constructs a MinerConfig object from a dictionary."""
+        # Handle extra_config if present (miner-specific, e.g. ESPMinerExtraConfig)
+        extra_config_value = None
+        extra_config_dict = dict_conf.get("extra_config")
+        if extra_config_dict is not None:
+            # Try to detect miner type from context or use ESPMinerExtraConfig as default
+            # For now, we'll use ESPMinerExtraConfig - this could be made more generic
+            # if other miner types need extra_config support
+            extra_config_value = ESPMinerExtraConfig.from_dict(extra_config_dict)
+            # Only set if there are actual values (not all None)
+            if not any(v is not None for v in extra_config_value.model_dump().values()):
+                extra_config_value = None
+
         return cls(
             pools=PoolConfig.from_dict(dict_conf.get("pools")),
             mining_mode=MiningModeConfig.from_dict(dict_conf.get("mining_mode")),
             fan_mode=FanModeConfig.from_dict(dict_conf.get("fan_mode")),
             temperature=TemperatureConfig.from_dict(dict_conf.get("temperature")),
+            extra_config=extra_config_value,
         )
 
     @classmethod
@@ -395,6 +414,7 @@ class MinerConfig(BaseModel):
         config = cls(
             pools=PoolConfig.from_espminer(web_system_info),
             fan_mode=FanModeConfig.from_espminer(web_system_info),
+            temperature=TemperatureConfig.from_espminer(web_system_info),
             extra_config=extra_config_value,
         )
         return config

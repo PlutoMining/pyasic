@@ -32,6 +32,11 @@ class ESPMinerExtraConfig(MinerExtraConfig):
     overheat_mode: int | None = None  # Overheat mode (0 or 1)
     overclock_enabled: int | None = None  # Overclock enabled (0 or 1)
     stats_frequency: int | None = None  # Stats update frequency
+    frequency: int | None = None  # Chipset frequency in MHz (e.g. 490)
+    core_voltage: int | None = None  # Core voltage in mV (e.g. 1100)
+
+    # System / runtime (read from device; freeHeap is typically read-only)
+    free_heap: int | None = None  # Free heap memory in bytes (API: freeHeap)
 
     # Fan settings (additional to fan_mode)
     min_fan_speed: int | None = None  # Minimum fan speed percentage
@@ -52,6 +57,9 @@ class ESPMinerExtraConfig(MinerExtraConfig):
             "overheat_mode": "overheat_mode",
             "overclock_enabled": "overclockEnabled",
             "stats_frequency": "statsFrequency",
+            "frequency": "frequency",
+            "core_voltage": "coreVoltage",
+            "free_heap": "freeHeap",
             "min_fan_speed": "minFanSpeed",
         }
 
@@ -61,6 +69,21 @@ class ESPMinerExtraConfig(MinerExtraConfig):
                 result[api_name] = value
 
         return result
+
+    @classmethod
+    def from_dict(cls, dict_conf: dict | None) -> ESPMinerExtraConfig:
+        """Create ESPMinerExtraConfig from a dictionary.
+
+        Args:
+            dict_conf: Dictionary with extra_config fields (can be None).
+
+        Returns:
+            An ESPMinerExtraConfig instance with fields from the dictionary.
+        """
+        if dict_conf is None:
+            return cls()
+        # Pydantic will handle the field mapping automatically
+        return cls(**dict_conf)
 
     @classmethod
     def from_espminer(cls, web_system_info: dict) -> ESPMinerExtraConfig:
@@ -79,5 +102,8 @@ class ESPMinerExtraConfig(MinerExtraConfig):
             overheat_mode=web_system_info.get("overheat_mode"),
             overclock_enabled=web_system_info.get("overclockEnabled"),
             stats_frequency=web_system_info.get("statsFrequency"),
+            frequency=web_system_info.get("frequency"),
+            core_voltage=web_system_info.get("coreVoltage"),
+            free_heap=web_system_info.get("freeHeap"),
             min_fan_speed=web_system_info.get("minFanSpeed"),
         )

@@ -68,13 +68,25 @@ class MinerProtocol(Protocol):
         return f"{self.model}: {str(self.ip)}"
 
     def __lt__(self, other):
-        return ipaddress.ip_address(self.ip) < ipaddress.ip_address(other.ip)
+        try:
+            return ipaddress.ip_address(self.ip) < ipaddress.ip_address(other.ip)
+        except ValueError:
+            # Fallback to string comparison if either side is not a literal IP.
+            return str(self.ip) < str(other.ip)
 
     def __gt__(self, other):
-        return ipaddress.ip_address(self.ip) > ipaddress.ip_address(other.ip)
+        try:
+            return ipaddress.ip_address(self.ip) > ipaddress.ip_address(other.ip)
+        except ValueError:
+            # Fallback to string comparison if either side is not a literal IP.
+            return str(self.ip) > str(other.ip)
 
     def __eq__(self, other):
-        return ipaddress.ip_address(self.ip) == ipaddress.ip_address(other.ip)
+        try:
+            return ipaddress.ip_address(self.ip) == ipaddress.ip_address(other.ip)
+        except ValueError:
+            # Fallback to string comparison if either side is not a literal IP.
+            return str(self.ip) == str(other.ip)
 
     @property
     def model(self) -> str:
@@ -627,7 +639,15 @@ class MinerProtocol(Protocol):
 
 
 class BaseMiner(MinerProtocol):
-    def __init__(self, ip: str, version: str | None = None) -> None:
+    def __init__(
+        self,
+        ip: str,
+        version: str | None = None,
+        *,
+        rpc_port: int | None = None,
+        web_port: int | None = None,
+        ssh_port: int | None = None,
+    ) -> None:
         self.ip = ip
 
         if self.expected_chips is None and self.raw_model is not None:
@@ -638,11 +658,24 @@ class BaseMiner(MinerProtocol):
 
         # interfaces
         if self._rpc_cls is not None:
-            self.rpc = self._rpc_cls(ip)
+            # Allow overriding the default RPC port for cases where the
+            # miner is exposed on a non-standard port (e.g. mock miners).
+            if rpc_port is not None:
+                self.rpc = self._rpc_cls(ip, port=rpc_port)
+            else:
+                self.rpc = self._rpc_cls(ip)
+
         if self._web_cls is not None:
             self.web = self._web_cls(ip)
+            # Allow overriding the default web port.
+            if web_port is not None:
+                self.web.port = web_port
+
         if self._ssh_cls is not None:
             self.ssh = self._ssh_cls(ip)
+            # Allow overriding the default SSH port.
+            if ssh_port is not None:
+                self.ssh.port = ssh_port
 
 
 AnyMiner = TypeVar("AnyMiner", bound=BaseMiner)

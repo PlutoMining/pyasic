@@ -169,7 +169,14 @@ class FanModeManual(MinerConfigValue):
         }
 
     def as_espminer(self) -> dict:
-        return {"autoFanspeed": 0, "fanspeed": self.speed}
+        # For ESPMiner/BitAxe we need to set both the generic
+        # `fanspeed` field and the newer `manualFanSpeed` field
+        # so that UIs / firmware that rely on either one stay in sync.
+        return {
+            "autoFanspeed": 0,
+            "fanspeed": self.speed,
+            "manualFanSpeed": self.speed,
+        }
 
     def as_luxos(self) -> dict:
         return {"fanset": {"speed": self.speed, "min_fans": self.minimum_fans}}

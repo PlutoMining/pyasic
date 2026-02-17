@@ -361,7 +361,6 @@ class TestBitAxeLocal(unittest.IsolatedAsyncioTestCase):
             self.assertIsInstance(frequency_options, list)
             self.assertGreater(len(frequency_options), 0)
 
-
         # Test swarm_info if available (optional)
         if swarm_info:
             self.assertIsInstance(swarm_info, dict)
