@@ -76,22 +76,28 @@ class MinerConfig(BaseModel):
         except AttributeError:
             raise KeyError
 
+    def _serialize_extra_config(self, **kwargs: Any) -> dict | None:
+        """Serialize extra_config for API output. Always returns dict or None."""
+        if self.extra_config is None:
+            return None
+        # Ensure we have a MinerExtraConfig subclass instance (e.g. ESPMinerExtraConfig)
+        if isinstance(self.extra_config, MinerExtraConfig):
+            return self.extra_config.model_dump(**kwargs)
+        # If it's a dict (e.g. from JSON round-trip), return as-is
+        if isinstance(self.extra_config, dict):
+            return self.extra_config
+        return None
+
     def as_dict(self) -> dict:
         """Converts the MinerConfig object to a dictionary."""
         result = self.model_dump()
-        # Explicitly handle extra_config serialization to ensure it's included
-        # Pydantic's model_dump() sometimes returns {} for nested BaseModel instances
-        # so we manually serialize extra_config if it exists
-        if self.extra_config is not None:
-            result["extra_config"] = self.extra_config.model_dump()
+        result["extra_config"] = self._serialize_extra_config()
         return result
 
     def model_dump(self, **kwargs) -> dict:
-        """Override model_dump to ensure extra_config is properly serialized."""
+        """Override model_dump to ensure extra_config is always included."""
         result = super().model_dump(**kwargs)
-        # Explicitly handle extra_config serialization to ensure it's included
-        if self.extra_config is not None:
-            result["extra_config"] = self.extra_config.model_dump(**kwargs)
+        result["extra_config"] = self._serialize_extra_config(**kwargs)
         return result
 
     def as_am_modern(self, user_suffix: str | None = None) -> dict:
