@@ -32,7 +32,9 @@ class UnknownMiner(BaseMiner):
         web_port: int | None = None,
         ssh_port: int | None = None,
     ) -> None:
-        super().__init__(ip, version, rpc_port=rpc_port, web_port=web_port, ssh_port=ssh_port)
+        super().__init__(
+            ip, version, rpc_port=rpc_port, web_port=web_port, ssh_port=ssh_port
+        )
         self.ip = ip
         if rpc_port is not None:
             self.rpc = UnknownRPCAPI(ip, port=rpc_port)

@@ -866,7 +866,9 @@ class MinerFactory:
 
         return await concurrent_get_first_result(tasks, lambda x: x is not None)
 
-    async def _get_miner_web(self, ip: str, *, web_port: int | None = None) -> MinerTypes | None:
+    async def _get_miner_web(
+        self, ip: str, *, web_port: int | None = None
+    ) -> MinerTypes | None:
         if web_port is not None:
             urls = [f"http://{ip}:{web_port}/", f"https://{ip}:{web_port}/"]
         else:
@@ -964,7 +966,9 @@ class MinerFactory:
             return MinerTypes.AURADINE
         return None
 
-    async def _get_miner_socket(self, ip: str, *, rpc_port: int | None = None) -> MinerTypes | None:
+    async def _get_miner_socket(
+        self, ip: str, *, rpc_port: int | None = None
+    ) -> MinerTypes | None:
         commands = ["version", "devdetails"]
         tasks = [
             asyncio.create_task(self._socket_ping(ip, cmd, rpc_port=rpc_port))
@@ -981,7 +985,9 @@ class MinerFactory:
         return None
 
     @staticmethod
-    async def _socket_ping(ip: str, cmd: str, *, rpc_port: int | None = None) -> str | None:
+    async def _socket_ping(
+        ip: str, cmd: str, *, rpc_port: int | None = None
+    ) -> str | None:
         data = b""
         port = rpc_port if rpc_port is not None else 4028
         try:
@@ -1549,7 +1555,9 @@ class MinerFactory:
     async def get_miner_model_bitaxe(
         self, ip: str, *, web_port: int | None = None
     ) -> str | None:
-        web_json_data = await self.send_web_command(ip, "/api/system/info", web_port=web_port)
+        web_json_data = await self.send_web_command(
+            ip, "/api/system/info", web_port=web_port
+        )
 
         if web_json_data is not None:
             try:
