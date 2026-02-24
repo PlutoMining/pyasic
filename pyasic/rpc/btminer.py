@@ -543,8 +543,8 @@ class BTMinerRPCAPI(BaseMinerRPCAPI):
         self,
         auto: bool = True,
         color: str = "red",
-        period: int = 60,
-        duration: int = 20,
+        period: int = 200,
+        duration: int = 100,
         start: int = 0,
     ) -> dict:
         """Set the LED on the miner using the API.
