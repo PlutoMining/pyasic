@@ -586,9 +586,10 @@ class MinerProtocol(Protocol):
                 )
                 miner_data[data_name] = await function(**args_to_send)
             except Exception as e:
-                raise APIError(
-                    f"Failed to call {data_name} on {self} while getting data."
-                ) from e
+                logger.warning(
+                    f"Failed to get {data_name} from {self}, skipping {e}",
+                )
+                miner_data[data_name] = None
         return miner_data
 
     async def get_data(
